@@ -24,4 +24,8 @@ cd /root/scout-systems/job-scout && python3 job_scout_v3.py
 
 **Present** a clean digest of top matches with scores and apply links.
 
+**Apply layer (offer, never auto-run):** if the user picks a job from the digest, offer to run the apply-agent bundle:
+cd /root/scout-systems/apply-agent && python3 apply.py --job <scout-result-dir>
+This produces a tailored resume PDF + cover letter + email draft + critic report. Run it only after the user asks, and never mark --approve without explicit user confirmation.
+
 End with: "Review the list above and tell me which ones you want to proceed with — I'll hold until I hear from you."

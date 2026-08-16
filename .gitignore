@@ -9,3 +9,7 @@ oss-scout/output/
 job_scout_results/
 x_scout_results/
 scout_results/
+apply-agent/profile.yaml
+apply-agent/config.conf
+apply-agent/output/
+apply-agent/tracker.csv

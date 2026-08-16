@@ -22,7 +22,13 @@ cd job-scout && python3 job_scout_v3.py
 python3 oss-scout/scout.py
 ```
 
-### 3. Outreach Tracker — `outreach-tracker/`
+### 3. Apply Agent — `apply-agent/`
+- Human-gated application layer on top of the scout: JD analysis → content-preserving resume tailoring (PDF) → cover letter + email drafts → blind critic review → tracker.
+- Nothing is auto-submitted: it produces the bundle and opens the apply link.
+- Verdicts: APPLY / FLAG / DISCARD (Go roles, Founding Engineer, residency-restricted, seniority gaps).
+- See `apply-agent/README.md` for setup (`profile.yaml` is gitignored).
+
+### 4. Outreach Tracker — `outreach-tracker/`
 - Tinder-style swipe UI for reviewing leads (FastAPI + SQLite + vanilla HTML/JS).
 - Routes: `/swipe` (card UI), `/interests` (saved leads), `/` (admin table).
 - Status flow: New → right-swipe → Interested → Applied; New → left-swipe → Skipped.

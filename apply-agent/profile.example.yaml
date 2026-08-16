@@ -1,0 +1,20 @@
+# Apply Agent — example profile (public template).
+# Copy to profile.yaml (gitignored) and fill with YOUR facts.
+# writer.py interpolates these fields verbatim — facts only, no invented claims.
+
+name: "Your Name"
+tagline: "one-line positioning"
+stack_short: "your core stack, comma-separated"
+setup_line: "how you work remotely"
+availability: "Remote worldwide from <location>, available <when>"
+fallback_projects: "ProjectA, ProjectB"
+signoff: "Best,\nYour Name\n<portfolio> | github.com/<you>"
+experience_years: 3
+
+allowed_numbers:
+  - "0"
+
+projects:
+  - name: "ProjectA"
+    one_liner: "ProjectA — one-line verified description with links"
+    why: "why you built it"

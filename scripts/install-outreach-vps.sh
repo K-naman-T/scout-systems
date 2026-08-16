@@ -18,14 +18,19 @@ docker run --rm -v /:/host alpine sh -ceu "
   if command -v rsync >/dev/null 2>&1; then
     rsync -a --delete \
       --exclude __pycache__ --exclude '*.pyc' --exclude .venv --exclude _screenshots \
+      --exclude 'outreach-tracker/outreach.db' --exclude 'outreach-tracker/outreach.db-*' \
       /host${SRC}/ /host${DEST}/
   else
     rm -rf /host${DEST}/*
     cp -a /host${SRC}/. /host${DEST}/
   fi
-  if [ -f /host${OLD_TRACKER}/outreach.db ]; then
+  # Preserve the LIVE database (it lives in the deployed tree). Only fall
+  # back to the legacy copy if the live DB is missing.
+  if [ -f /host${DEST}/outreach-tracker/outreach.db ]; then
+    echo 'Preserved live outreach.db'
+  elif [ -f /host${OLD_TRACKER}/outreach.db ]; then
     cp -a /host${OLD_TRACKER}/outreach.db /host${DEST}/outreach-tracker/outreach.db
-    echo 'Preserved production outreach.db'
+    echo 'Restored outreach.db from legacy path'
   fi
   chmod -R a+rX /host${DEST}
 "
