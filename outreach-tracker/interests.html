@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f6f4f0">
+<title>Saved — Scout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <header class="topbar">
+    <a href="/swipe" class="topbar__brand">
+      <span class="topbar__mark">S</span>
+      Saved
+    </a>
+    <div class="topbar__meta">
+      <span class="topbar__count">{{ leads|length }} saved</span>
+      <div class="topbar__desktop-nav">
+        <a href="/swipe" class="topbar__link">Review</a>
+        <a href="/" class="topbar__link">Leads</a>
+      </div>
+      <span class="topbar__user">{% if user %}<strong>{{ user }}</strong> · <a href="/logout" class="topbar__link">Out</a>{% else %}<a href="/login" class="topbar__link">Sign in</a>{% endif %}</span>
+    </div>
+  </header>
+
+  <main class="main-content">
+    {% if leads %}
+      {% for lead in leads %}
+      <div class="interest-card">
+        <div class="interest-card__title">{{ lead.name }}</div>
+        {% if lead.company %}<div class="interest-card__company">{{ lead.company }}</div>{% endif %}
+        <div class="interest-card__tags">
+          <span class="tag tag--channel">{{ lead.channel }}</span>
+          {% if lead.value_estimate %}<span class="tag tag--rate">{{ lead.value_estimate }}</span>{% endif %}
+          {% if lead.role_or_target %}<span class="tag" style="background:var(--bg-subtle);color:var(--text-secondary);">{{ lead.role_or_target }}</span>{% endif %}
+          <span class="status-badge status-{{ lead.status }}">{{ lead.status }}</span>
+          {% if lead.x_handle or lead.x_overall_score %}
+          <span class="tag tag--x">{% if lead.x_handle %}{{ lead.x_handle }}{% endif %}{% if lead.x_overall_score %} {{ lead.x_overall_score }}{% endif %}</span>
+          {% endif %}
+        </div>
+        {% if lead.notes %}<div class="interest-card__notes">{{ lead.notes }}</div>{% endif %}
+        <div class="interest-card__actions">
+          <a href="{{ lead.url or '#' }}" target="_blank" class="btn btn--primary">Open link</a>
+          <button class="btn" onclick="markApplied({{ lead.id }}, this)">Mark applied</button>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state__icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </div>
+      <h2>No saved leads yet</h2>
+      <p>Swipe right on leads you want to pursue — they'll appear here.</p>
+      <a href="/swipe" class="btn btn--primary">Start reviewing</a>
+    </div>
+    {% endif %}
+  </main>
+
+  {% set active_tab = 'interests' %}
+  {% include "_bottom_nav.html" %}
+</div>
+
+<script>
+function markApplied(leadId, btn) {
+  fetch(`/lead/${leadId}/edit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      name: btn.closest('.interest-card').querySelector('.interest-card__title').textContent,
+      status: 'Applied'
+    })
+  }).then(() => {
+    btn.textContent = 'Applied';
+    btn.classList.add('btn--primary');
+    btn.disabled = true;
+    const badge = btn.closest('.interest-card').querySelector('.status-badge');
+    if (badge) { badge.textContent = 'Applied'; badge.className = 'status-badge status-Applied'; }
+  });
+}
+</script>
+</body>
+</html>

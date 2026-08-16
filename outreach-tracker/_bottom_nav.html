@@ -1,0 +1,24 @@
+<nav class="tabbar" aria-label="Main navigation">
+  <a href="/swipe" class="tabbar__item{% if active_tab == 'swipe' %} is-active{% endif %}">
+    <div class="tabbar__item-wrap">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8"/></svg>
+      {% if counts and counts.pending > 0 and active_tab != 'swipe' %}
+      <span class="tabbar__badge">{{ counts.pending }}</span>
+      {% endif %}
+    </div>
+    Review
+  </a>
+  <a href="/interests" class="tabbar__item{% if active_tab == 'interests' %} is-active{% endif %}">
+    <div class="tabbar__item-wrap">
+      <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      {% if counts and counts.interested > 0 and active_tab != 'interests' %}
+      <span class="tabbar__badge">{{ counts.interested }}</span>
+      {% endif %}
+    </div>
+    Saved
+  </a>
+  <a href="/" class="tabbar__item{% if active_tab == 'leads' %} is-active{% endif %}">
+    <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+    Leads
+  </a>
+</nav>

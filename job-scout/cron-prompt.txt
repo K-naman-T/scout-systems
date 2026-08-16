@@ -1,0 +1,27 @@
+Run the Job Scout agent and present today's findings for review. DO NOT proceed with any applications, outreach messages, or external actions of any kind.
+
+**Execute (scout-systems — not the old Hermes skill copy):**
+cd /root/scout-systems/job-scout && python3 job_scout_v3.py
+
+**Then read outputs:**
+- ~/job_scout_results/$(date +%Y-%m-%d)/summary.md
+- ~/job_scout_results/job_scout_tracker.csv
+
+**Reference files (load before due diligence):**
+- /root/scout-systems/job-scout/profile.conf
+- /root/scout-systems/job-scout/due-diligence-template.md
+- /root/scout-systems/AGENTS.md (discovery-only rules)
+
+**Profile — fill from profile.conf (do not invent details):**
+- Target roles (equal priority): Agent Engineer, AI Engineer, Full Stack Engineer. NOT Founding Engineer.
+- Stack: Python, TypeScript, React, Node.js, Docker, K8s, FastAPI, Postgres, AI agents, LLMs, voice/speech
+- Experience: see profile.conf
+- Salary: see profile.conf
+- Prefers assignment-based/take-home over leetcode gauntlets
+- Dealbreakers: apply the blacklist/region rules from profile.conf and due-diligence-template.md
+
+**Due diligence (mandatory for top 8):** For each candidate, independently verify HQ country, stage, funding, product. FLAG AND DISCARD companies matching the blacklist rules from profile.conf / due-diligence-template.md. Do NOT trust auto-generated company_research.txt — use web_search.
+
+**Present** a clean digest of top matches with scores and apply links.
+
+End with: "Review the list above and tell me which ones you want to proceed with — I'll hold until I hear from you."

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f6f4f0">
+<title>Sign in — Scout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-card__brand">
+      <span class="topbar__mark">S</span>
+      <h1>Scout</h1>
+    </div>
+    <p class="login-card__sub">Sign in to see your personalized lead queue.</p>
+    <form method="post" action="/login">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" name="username" class="input" placeholder="username" required autocomplete="username">
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label>Password</label>
+        <input type="password" name="password" class="input" placeholder="Password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn--primary btn--block" style="margin-top:20px;">Sign in</button>
+    </form>
+    {% if error %}<p class="login-error">{{ error }}</p>{% endif %}
+    <p class="login-hint">Accounts are configured via the OUTREACH_USERS env var (JSON)</p>
+  </div>
+</div>
+
+</body>
+</html>

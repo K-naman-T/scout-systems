@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+*.db
+*.sqlite*
+.env
+*.log
+oss-scout/output/
+job_scout_results/
+x_scout_results/
+scout_results/

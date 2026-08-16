@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f6f4f0">
+<title>Leads — Scout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <header class="topbar">
+    <a href="/" class="topbar__brand">
+      <span class="topbar__mark">S</span>
+      Leads
+    </a>
+    <div class="topbar__meta">
+      <span class="topbar__count">{{ stats.total }} total</span>
+      <div class="topbar__desktop-nav">
+        <a href="/swipe" class="topbar__link">Review</a>
+        <a href="/interests" class="topbar__link">Saved</a>
+        <button class="btn btn--primary btn--sm" onclick="openModal('add-modal')">Add</button>
+      </div>
+      <span class="topbar__user">{% if user %}<strong>{{ user }}</strong> · <a href="/logout" class="topbar__link">Out</a>{% else %}<a href="/login" class="topbar__link">Sign in</a>{% endif %}</span>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="stats-row">
+      <div class="stat-pill">
+        <div class="stat-pill__num">{{ stats.total }}</div>
+        <div class="stat-pill__label">Total</div>
+      </div>
+      <div class="stat-pill {% if stats.today_followups > 0 %}stat-pill--today{% endif %}">
+        <div class="stat-pill__num">{{ stats.today_followups }}</div>
+        <div class="stat-pill__label">Follow-ups today</div>
+      </div>
+      <div class="stat-pill {% if stats.overdue_followups > 0 %}stat-pill--urgent{% endif %}">
+        <div class="stat-pill__num">{{ stats.overdue_followups }}</div>
+        <div class="stat-pill__label">Overdue</div>
+      </div>
+      <div class="stat-pill stat-pill--won">
+        <div class="stat-pill__num">{{ stats.by_status.get('Closed Won', 0) }}</div>
+        <div class="stat-pill__label">Won</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill__num">{{ stats.by_status.get('Meeting', 0) }}</div>
+        <div class="stat-pill__label">Meetings</div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <form method="GET" action="/" class="filters-bar__row">
+        <select name="status" class="select" onchange="this.form.submit()">
+          <option value="All" {% if current_status == 'All' %}selected{% endif %}>All statuses</option>
+          {% for s in statuses %}
+          <option value="{{ s }}" {% if current_status == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+        <select name="channel" class="select" onchange="this.form.submit()">
+          <option value="All" {% if current_channel == 'All' %}selected{% endif %}>All channels</option>
+          {% for c in channels %}
+          <option value="{{ c }}" {% if current_channel == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      <form method="GET" action="/" class="filters-bar__row">
+        <input type="hidden" name="status" value="{{ current_status }}">
+        <input type="hidden" name="channel" value="{{ current_channel }}">
+        <input type="text" name="search" class="input filters-bar__search" placeholder="Search name, company, notes…" value="{{ current_search }}">
+        <button type="submit" class="btn btn--primary btn--sm">Search</button>
+        {% if current_search %}<a href="/" class="btn btn--sm">Clear</a>{% endif %}
+      </form>
+    </div>
+
+    <button class="btn btn--primary btn--block" style="margin-bottom:16px;display:flex;" onclick="openModal('add-modal')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      Add lead
+    </button>
+    <style>@media(min-width:768px){.main-content > .btn--block{display:none!important}}</style>
+
+    {% if leads %}
+    <div class="lead-cards">
+      {% for lead in leads %}
+      <a href="/lead/{{ lead.id }}" class="lead-card">
+        <div class="lead-card__top">
+          <div class="lead-card__name">{{ lead.name }}</div>
+          <span class="status-badge status-{{ lead.status|replace(' ', '') }}">{{ lead.status }}</span>
+        </div>
+        {% if lead.company %}<div class="lead-card__company">{{ lead.company }}</div>{% endif %}
+        <div class="lead-card__meta">
+          <span class="lead-card__channel">{{ lead.channel }}</span>
+          {% if lead.value_estimate %}<span class="lead-card__value">{{ lead.value_estimate }}</span>{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Name / Company</th>
+            <th>Channel</th>
+            <th>Status</th>
+            <th>Contacted</th>
+            <th>Follow-up</th>
+            <th>Value</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lead in leads %}
+          <tr>
+            <td>
+              <a href="/lead/{{ lead.id }}" class="lead-link">{{ lead.name }}</a>
+              {% if lead.company %}<div class="muted">{{ lead.company }}</div>{% endif %}
+              {% if lead.x_handle or lead.x_overall_score %}
+              <div class="muted">{% if lead.x_handle %}@{{ lead.x_handle.replace('@','') }}{% endif %}{% if lead.x_overall_score %} · X {{ lead.x_overall_score }}{% endif %}</div>
+              {% endif %}
+            </td>
+            <td><span class="lead-card__channel">{{ lead.channel }}</span></td>
+            <td><span class="status-badge status-{{ lead.status|replace(' ', '') }}">{{ lead.status }}</span></td>
+            <td class="muted">{{ lead.contacted_date or '—' }}</td>
+            <td>
+              {% if lead.next_followup %}
+                {% if lead.next_followup == today_iso %}
+                  <span class="followup-today">{{ lead.next_followup }}</span>
+                {% elif lead.next_followup < today_iso and lead.status not in ('Closed Won', 'Closed Lost') %}
+                  <span class="followup-overdue">{{ lead.next_followup }}</span>
+                {% else %}
+                  <span class="muted">{{ lead.next_followup }}</span>
+                {% endif %}
+              {% else %}<span class="muted">—</span>{% endif %}
+            </td>
+            <td class="muted">{{ lead.value_estimate or '—' }}</td>
+            <td><a href="/lead/{{ lead.id }}" class="btn btn--sm">View</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state__icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      </div>
+      <h3>No leads yet</h3>
+      <p>Add your first outreach target or wait for the next scout run.</p>
+      <button class="btn btn--primary" onclick="openModal('add-modal')">Add lead</button>
+    </div>
+    {% endif %}
+  </main>
+
+  {% set active_tab = 'leads' %}
+  {% include "_bottom_nav.html" %}
+</div>
+
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <h2 class="modal__title">New lead</h2>
+    <form method="POST" action="/lead/new">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Name *</label>
+          <input type="text" name="name" required placeholder="Person or organization">
+        </div>
+        <div class="form-group">
+          <label>Company</label>
+          <input type="text" name="company" placeholder="Organization">
+        </div>
+        <div class="form-group">
+          <label>Role / target</label>
+          <input type="text" name="role_or_target" placeholder="CSR head, founder…">
+        </div>
+        <div class="form-group">
+          <label>Channel</label>
+          <select name="channel">
+            {% for c in channels %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select name="status">
+            {% for s in statuses %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Contacted</label>
+          <input type="date" name="contacted_date">
+        </div>
+        <div class="form-group">
+          <label>Next follow-up</label>
+          <input type="date" name="next_followup">
+        </div>
+        <div class="form-group">
+          <label>Est. value</label>
+          <input type="text" name="value_estimate" placeholder="$4k/mo, ₹50k project…">
+        </div>
+        <div class="form-group">
+          <label>URL</label>
+          <input type="url" name="url" placeholder="https://…">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" name="contact_email">
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="text" name="contact_phone">
+        </div>
+        <div class="form-group full">
+          <label>Notes</label>
+          <textarea name="notes" placeholder="Context, warm intro, conversation highlights…"></textarea>
+        </div>
+      </div>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" onclick="closeModal('add-modal')">Cancel</button>
+        <button type="submit" class="btn btn--primary">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>

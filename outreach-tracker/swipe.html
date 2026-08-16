@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#f6f4f0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Review — Scout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/app.css">
+<style>
+  body { overflow: hidden; user-select: none; -webkit-user-select: none; }
+</style>
+</head>
+<body>
+
+<div class="swipe-app">
+  <header class="topbar">
+    <a href="/swipe" class="topbar__brand">
+      <span class="topbar__mark">S</span>
+      Review
+    </a>
+    <div class="topbar__meta">
+      <span class="topbar__count" id="pending-count">{{ counts.pending }} left</span>
+      <span class="topbar__user">{% if user %}<strong>{{ user }}</strong> · <a href="/logout" class="topbar__link">Out</a>{% else %}<a href="/login" class="topbar__link">Sign in</a>{% endif %}</span>
+    </div>
+  </header>
+
+  <div class="swipe-stage">
+    <div class="swipe-card-wrap" id="card-container"></div>
+  </div>
+
+  <div class="swipe-dock" id="swipe-dock" style="display:none;">
+    <button class="swipe-dock__btn swipe-dock__btn--skip" onclick="swipe('left')" aria-label="Skip">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <a class="swipe-dock__btn swipe-dock__btn--open" id="btn-open" href="#" target="_blank" aria-label="Open link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+    </a>
+    <button class="swipe-dock__btn swipe-dock__btn--like" onclick="swipe('right')" aria-label="Save">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    </button>
+  </div>
+
+  {% set active_tab = 'swipe' %}
+  {% include "_bottom_nav.html" %}
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let currentLead = null;
+let isLoading = false;
+
+{% if first_lead %}
+  currentLead = {{ first_lead | tojson }};
+  renderCard(currentLead);
+  document.getElementById('swipe-dock').style.display = 'flex';
+{% else %}
+  showEmpty();
+{% endif %}
+
+function renderCard(lead) {
+  const el = document.getElementById('card-container');
+  const openBtn = document.getElementById('btn-open');
+  const urlInvalid = lead.x_url_valid === false;
+  if (openBtn) {
+    if (urlInvalid) {
+      openBtn.href = '#';
+      openBtn.style.opacity = '0.35';
+      openBtn.style.pointerEvents = 'none';
+      openBtn.title = 'Unverified X link — not a real post';
+    } else {
+      openBtn.href = lead.url || '#';
+      openBtn.style.opacity = '';
+      openBtn.style.pointerEvents = '';
+      openBtn.title = 'Open link';
+    }
+  }
+
+  const isX = lead.x_persona || (lead.channel && lead.channel.toLowerCase().includes('x'));
+  let xBlock = '';
+  if (isX && (lead.x_handle || lead.x_overall_score)) {
+    const handle = lead.x_handle ? '@' + lead.x_handle.replace('@','') : '';
+    const score = lead.x_overall_score ? lead.x_overall_score + '/100' : '';
+    const excerpt = (lead.x_signals_explain || lead.notes || '').slice(0, 160);
+    xBlock = `<div class="swipe-card__x"><strong>${esc(handle)}</strong>${score ? ' · ' + esc(score) : ''}<br>${esc(excerpt)}</div>`;
+  }
+
+  el.innerHTML = `
+    <div class="swipe-card" id="active-card">
+      <div class="swipe-card__tags">
+        <span class="tag tag--channel">${esc(lead.channel)}</span>
+        ${lead.value_estimate ? `<span class="tag tag--rate">${esc(lead.value_estimate)}</span>` : ''}
+        ${isX && lead.x_overall_score ? `<span class="tag tag--x">X ${lead.x_overall_score}</span>` : ''}
+      </div>
+      <h2 class="swipe-card__title">${esc(lead.name)}</h2>
+      <div class="swipe-card__company">${lead.company ? 'at <strong>' + esc(lead.company) + '</strong>' : ''}</div>
+      ${lead.role_or_target ? `<div class="swipe-card__role">${esc(lead.role_or_target)}</div>` : ''}
+      <div class="swipe-card__body">${esc(lead.notes || lead.role_or_target || 'No details yet.')}</div>
+      ${urlInvalid ? `<div class="swipe-card__x" style="background:rgba(185,28,28,0.08);border-color:rgba(185,28,28,0.2);color:#b91c1c;">Unverified link — this X post URL is demo or invalid (${esc(lead.x_url_invalid_reason || 'bad citation')}). Run x-scout with real X tools.</div>` : ''}
+      ${xBlock}
+      <div class="swipe-overlay swipe-overlay--like" id="overlay-like">SAVE</div>
+      <div class="swipe-overlay swipe-overlay--nope" id="overlay-nope">SKIP</div>
+    </div>
+  `;
+
+  setupDrag(document.getElementById('active-card'), lead.id);
+}
+
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function setupDrag(card, leadId) {
+  let startX = 0, currentX = 0, isDragging = false;
+  const likeEl = document.getElementById('overlay-like');
+  const nopeEl = document.getElementById('overlay-nope');
+
+  function onStart(x) {
+    startX = x; currentX = 0; isDragging = true;
+    card.classList.add('dragging');
+  }
+
+  function onMove(x) {
+    if (!isDragging) return;
+    currentX = x - startX;
+    card.style.transform = `translateX(${currentX}px) rotate(${currentX * 0.06}deg)`;
+    if (currentX > 24) { likeEl.classList.add('visible'); nopeEl.classList.remove('visible'); }
+    else if (currentX < -24) { nopeEl.classList.add('visible'); likeEl.classList.remove('visible'); }
+    else { likeEl.classList.remove('visible'); nopeEl.classList.remove('visible'); }
+  }
+
+  function onEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    card.classList.remove('dragging');
+    likeEl.classList.remove('visible');
+    nopeEl.classList.remove('visible');
+    if (currentX > 100) doSwipe(leadId, 'right', card);
+    else if (currentX < -100) doSwipe(leadId, 'left', card);
+    else card.style.transform = '';
+  }
+
+  card.addEventListener('touchstart', e => onStart(e.touches[0].clientX), { passive: true });
+  card.addEventListener('touchmove', e => onMove(e.touches[0].clientX), { passive: true });
+  card.addEventListener('touchend', onEnd, { passive: true });
+
+  card.addEventListener('mousedown', e => {
+    onStart(e.clientX);
+    const move = ev => onMove(ev.clientX);
+    const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); onEnd(); };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  });
+}
+
+function swipe(direction) {
+  if (!currentLead || isLoading) return;
+  const card = document.getElementById('active-card');
+  if (!card) return;
+  card.style.transform = `translateX(${direction === 'right' ? 400 : -400}px) rotate(${direction === 'right' ? 12 : -12}deg)`;
+  card.style.opacity = '0';
+  doSwipe(currentLead.id, direction, card);
+}
+
+function doSwipe(leadId, direction, cardEl) {
+  isLoading = true;
+  document.getElementById('swipe-dock').style.display = 'none';
+
+  fetch(`/api/swipe/${leadId}?direction=${direction}`, { method: 'POST' })
+    .then(r => r.json())
+    .then(() => {
+      showToast(direction === 'right' ? 'Saved to interests' : 'Skipped', direction === 'right' ? 'liked' : 'skipped');
+      updateCounts();
+      setTimeout(loadNext, 180);
+    })
+    .catch(() => {
+      showToast('Something went wrong', '');
+      isLoading = false;
+      document.getElementById('swipe-dock').style.display = 'flex';
+      if (cardEl) { cardEl.style.transform = ''; cardEl.style.opacity = '1'; }
+    });
+}
+
+function loadNext() {
+  fetch('/api/next')
+    .then(r => r.json())
+    .then(data => {
+      if (data.done || !data.lead) { showEmpty(); return; }
+      currentLead = data.lead;
+      renderCard(currentLead);
+      document.getElementById('swipe-dock').style.display = 'flex';
+      isLoading = false;
+      const pending = document.getElementById('pending-count');
+      if (pending) {
+        const n = parseInt(pending.textContent) || 0;
+        if (n > 0) pending.textContent = (n - 1) + ' left';
+      }
+    })
+    .catch(() => { showEmpty(); isLoading = false; });
+}
+
+function showEmpty() {
+  document.getElementById('card-container').innerHTML = `
+    <div class="empty-state" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div class="empty-state__icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+      </div>
+      <h2>All caught up</h2>
+      <p>No new leads to review. Check back after the next scout run.</p>
+      <a href="/interests" class="btn btn--primary">View saved leads</a>
+    </div>
+  `;
+  document.getElementById('swipe-dock').style.display = 'none';
+  document.getElementById('pending-count').textContent = '0 left';
+  currentLead = null;
+}
+
+function updateCounts() {
+  fetch('/api/interests').then(r => r.json()).then(d => {
+    const badge = document.querySelector('.tabbar__item[href="/interests"] .tabbar__badge');
+    if (d.leads.length > 0) {
+      if (badge) badge.textContent = d.leads.length;
+    }
+  });
+}
+
+let toastTimeout;
+function showToast(msg, cls) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (cls ? ' toast--' + cls : '');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => el.classList.remove('show'), 1400);
+}
+</script>
+</body>
+</html>
